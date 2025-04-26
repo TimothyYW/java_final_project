@@ -22,9 +22,9 @@ public class MenuApp extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new GridLayout(6, 2, 10, 10));
 
-        Database.createTable(); // Make sure table exists
+        Database.createTable(); // make sure database table exists
 
-        // Add Labels and Fields
+        // Add Labels and TextFields
         add(new JLabel("Nama Menu:"));
         namaField = new JTextField();
         add(namaField);
@@ -41,19 +41,19 @@ public class MenuApp extends JFrame {
         insertButton = new JButton("Insert Menu");
         add(insertButton);
 
-        // Empty label to fix layout
+        // Empty label to balance layout
         add(new JLabel(""));
 
-        // Table to show the menus
+        // Table to display menus
         tableModel = new DefaultTableModel(new String[]{"Kode Menu", "Nama Menu", "Harga Menu", "Stok Menu"}, 0);
         menuTable = new JTable(tableModel);
         JScrollPane scrollPane = new JScrollPane(menuTable);
         add(scrollPane);
 
-        // Empty label to fix layout
+        // Empty label to balance layout
         add(new JLabel(""));
 
-        // Insert Button Action
+        // Insert button action
         insertButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -61,7 +61,7 @@ public class MenuApp extends JFrame {
             }
         });
 
-        loadMenuData(); // Load data initially
+        loadMenuData(); // Load existing menu data when app starts
     }
 
     private void insertMenu() {
@@ -77,7 +77,7 @@ public class MenuApp extends JFrame {
         try {
             int harga = Integer.parseInt(hargaText);
             int stok = Integer.parseInt(stokText);
-            String kodeMenu = generateKodeMenu(); // Random kode: PD-XXX
+            String kodeMenu = generateKodeMenu(); // Random code PD-XXX
 
             String sql = "INSERT INTO menu (kode_menu, nama_menu, harga_menu, stok_menu) VALUES (?, ?, ?, ?)";
             Connection conn = Database.connect();
@@ -91,12 +91,12 @@ public class MenuApp extends JFrame {
 
             JOptionPane.showMessageDialog(this, "Menu inserted successfully with code: " + kodeMenu);
 
-            
+            // Clear input fields
             namaField.setText("");
             hargaField.setText("");
             stokField.setText("");
 
-            loadMenuData(); 
+            loadMenuData(); // Refresh table after insert
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "Harga and Stok must be valid numbers!");
         } catch (SQLException ex) {
@@ -106,6 +106,7 @@ public class MenuApp extends JFrame {
 
     private void loadMenuData() {
         tableModel.setRowCount(0); 
+
         String sql = "SELECT * FROM menu";
 
         try (Connection conn = Database.connect();
