@@ -20,11 +20,11 @@ public class MenuApp extends JFrame {
         setSize(700, 500);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-        setLayout(new GridLayout(6, 2, 10, 10));
+        setLayout(new GridLayout(7, 2, 10, 10)); // Adjust for more buttons
 
-        Database.createTable(); // make sure database table exists
+        Database.createTable(); // Ensure database table exists
 
-        // Add Labels and TextFields
+        // --- Add Labels and TextFields ---
         add(new JLabel("Nama Menu:"));
         namaField = new JTextField();
         add(namaField);
@@ -37,23 +37,24 @@ public class MenuApp extends JFrame {
         stokField = new JTextField();
         add(stokField);
 
-        // Insert Button
+        // --- Insert Button ---
         insertButton = new JButton("Insert Menu");
         add(insertButton);
 
-        // Empty label to balance layout
-        add(new JLabel(""));
+        // --- Update Button ---
+        JButton updateButton = new JButton("Update Menu");
+        add(updateButton);
 
-        // Table to display menus
+        // --- Table to display menus ---
         tableModel = new DefaultTableModel(new String[]{"Kode Menu", "Nama Menu", "Harga Menu", "Stok Menu"}, 0);
         menuTable = new JTable(tableModel);
         JScrollPane scrollPane = new JScrollPane(menuTable);
         add(scrollPane);
 
-        // Empty label to balance layout
+        // --- Empty label to balance layout ---
         add(new JLabel(""));
 
-        // Insert button action
+        // --- Insert button action ---
         insertButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -61,7 +62,28 @@ public class MenuApp extends JFrame {
             }
         });
 
-        loadMenuData(); // Load existing menu data when app starts
+        // --- Update button action ---
+        updateButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                updateMenu();
+            }
+        });
+
+        // --- MouseListener for auto-fill fields when clicking a row ---
+        menuTable.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                int row = menuTable.getSelectedRow();
+                if (row >= 0) {
+                    namaField.setText(tableModel.getValueAt(row, 1).toString());
+                    hargaField.setText(tableModel.getValueAt(row, 2).toString());
+                    stokField.setText(tableModel.getValueAt(row, 3).toString());
+                }
+            }
+        });
+
+        // --- Load menu data at startup ---
+        loadMenuData();
     }
 
     private void insertMenu() {
@@ -77,7 +99,7 @@ public class MenuApp extends JFrame {
         try {
             int harga = Integer.parseInt(hargaText);
             int stok = Integer.parseInt(stokText);
-            String kodeMenu = generateKodeMenu(); // Random code PD-XXX
+            String kodeMenu = generateKodeMenu(); // Random PD-XXX
 
             String sql = "INSERT INTO menu (kode_menu, nama_menu, harga_menu, stok_menu) VALUES (?, ?, ?, ?)";
             Connection conn = Database.connect();
@@ -91,7 +113,6 @@ public class MenuApp extends JFrame {
 
             JOptionPane.showMessageDialog(this, "Menu inserted successfully with code: " + kodeMenu);
 
-            // Clear input fields
             namaField.setText("");
             hargaField.setText("");
             stokField.setText("");
@@ -104,8 +125,48 @@ public class MenuApp extends JFrame {
         }
     }
 
+    private void updateMenu() {
+        int selectedRow = menuTable.getSelectedRow();
+
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a menu item to update!");
+            return;
+        }
+
+        String kodeMenu = tableModel.getValueAt(selectedRow, 0).toString();
+        String newHargaText = hargaField.getText();
+        String newStokText = stokField.getText();
+
+        if (newHargaText.isEmpty() || newStokText.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Harga and Stok fields must not be empty!");
+            return;
+        }
+
+        try {
+            int newHarga = Integer.parseInt(newHargaText);
+            int newStok = Integer.parseInt(newStokText);
+
+            String sql = "UPDATE menu SET harga_menu = ?, stok_menu = ? WHERE kode_menu = ?";
+            Connection conn = Database.connect();
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, newHarga);
+            pstmt.setInt(2, newStok);
+            pstmt.setString(3, kodeMenu);
+            pstmt.executeUpdate();
+            conn.close();
+
+            JOptionPane.showMessageDialog(this, "Menu updated successfully!");
+
+            loadMenuData(); // Refresh the table
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Harga and Stok must be valid numbers!");
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage());
+        }
+    }
+
     private void loadMenuData() {
-        tableModel.setRowCount(0); 
+        tableModel.setRowCount(0); // Clear previous rows
 
         String sql = "SELECT * FROM menu";
 
