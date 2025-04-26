@@ -17,10 +17,10 @@ public class MenuApp extends JFrame {
 
     public MenuApp() {
         setTitle("PT Pudding Menu Manager");
-        setSize(700, 500);
+        setSize(800, 600);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-        setLayout(new GridLayout(7, 2, 10, 10)); // Adjust for more buttons
+        setLayout(new GridLayout(8, 2, 10, 10)); // Adjust for more buttons
 
         Database.createTable(); // Ensure database table exists
 
@@ -45,13 +45,17 @@ public class MenuApp extends JFrame {
         JButton updateButton = new JButton("Update Menu");
         add(updateButton);
 
+        // --- Delete Button ---
+        JButton deleteButton = new JButton("Delete Menu");
+        add(deleteButton);
+
         // --- Table to display menus ---
         tableModel = new DefaultTableModel(new String[]{"Kode Menu", "Nama Menu", "Harga Menu", "Stok Menu"}, 0);
         menuTable = new JTable(tableModel);
         JScrollPane scrollPane = new JScrollPane(menuTable);
         add(scrollPane);
 
-        // --- Empty label to balance layout ---
+        // Empty label to fix layout
         add(new JLabel(""));
 
         // --- Insert button action ---
@@ -67,6 +71,14 @@ public class MenuApp extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 updateMenu();
+            }
+        });
+
+        // --- Delete button action ---
+        deleteButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                deleteMenu();
             }
         });
 
@@ -165,6 +177,38 @@ public class MenuApp extends JFrame {
         }
     }
 
+    private void deleteMenu() {
+        int selectedRow = menuTable.getSelectedRow();
+
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a menu item to delete!");
+            return;
+        }
+
+        String kodeMenu = tableModel.getValueAt(selectedRow, 0).toString();
+
+        int confirm = JOptionPane.showConfirmDialog(this, 
+                "Are you sure you want to delete this menu?", 
+                "Confirm Delete", 
+                JOptionPane.YES_NO_OPTION);
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                String sql = "DELETE FROM menu WHERE kode_menu = ?";
+                Connection conn = Database.connect();
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                pstmt.setString(1, kodeMenu);
+                pstmt.executeUpdate();
+                conn.close();
+
+                JOptionPane.showMessageDialog(this, "Menu deleted successfully!");
+                loadMenuData(); // Refresh table after delete
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(this, "Database error: " + ex.getMessage());
+            }
+        }
+    }
+
     private void loadMenuData() {
         tableModel.setRowCount(0); // Clear previous rows
 
@@ -189,7 +233,7 @@ public class MenuApp extends JFrame {
 
     private String generateKodeMenu() {
         Random rand = new Random();
-        int randomNum = rand.nextInt(900) + 100; 
+        int randomNum = rand.nextInt(900) + 100; // Random number 100-999
         return "PD-" + randomNum;
     }
 
